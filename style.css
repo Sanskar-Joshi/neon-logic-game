@@ -19,10 +19,9 @@ body {
   background-image: radial-gradient(
     circle at 50% 50%,
     #1a1a1a 0%,
-    #000000 100%
+    #000000 100%);
     overflow: auto;
     padding: 20px 0;
-  );
   color: white;
   min-height: 100vh;
   display: flex;
@@ -297,4 +296,5 @@ body {
     margin-bottom: 10px;
   }   
 }
+
 
