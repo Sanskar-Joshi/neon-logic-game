@@ -21,6 +21,7 @@ const winPatterns = [
 ];
 
 // DOM elements
+const newGameBtn = document.getElementById("newGameBtn");
 const cells = document.querySelectorAll(".cell");
 const currentPlayerDisplay = document.getElementById("currentPlayer");
 const gameStatus = document.getElementById("gameStatus");
@@ -62,7 +63,10 @@ function handleCellClick(index) {
 }
 
 function makeMove(index) {
-  document.getElementById("clickSound").play();
+  const clickSound = document.getElementById("clickSound");
+
+  if (clickSound) clickSound.play().catch(() => {});
+
   board[index] = currentPlayer;
   updateCell(index);
 
@@ -84,19 +88,49 @@ function makeMove(index) {
 // Computer Logic (Random Move)
 function computerMove() {
   if (!gameActive) return;
+  let moveIndex = -1;
 
-  // 1. Find all empty cells
-  let emptyIndices = [];
-  board.forEach((cell, index) => {
-    if (cell === "") emptyIndices.push(index);
-  });
+  // 1. ATTACK: Check if Computer (O) can win now
+  moveIndex = findBestMove("O");
 
-  // 2. Pick a random empty spot
-  if (emptyIndices.length > 0) {
-    const randomIndex = Math.floor(Math.random() * emptyIndices.length);
-    const moveIndex = emptyIndices[randomIndex];
+  // 2. DEFFEND: If can't win, check if player (X) is winning and block them
+  if (moveIndex === -1) {
+    moveIndex = findBestMove("X");
+  }
+
+  // 3. STRATEGY: Take Center if available (Index 4 is best spot)
+  if (moveIndex === -1 && board[4] === "") {
+    moveIndex = 4;
+  }
+
+  // 4. RANDOM: If no strategic move, pick random empty spot
+  if (moveIndex === -1) {
+    let emptyIndices = [];
+    board.forEach((cell, index) => {
+      if (cell === "") emptyIndices.push(index);
+    });
+    if (emptyIndices.length > 0) {
+      const randomIndex = Math.floor(Math.random() * emptyIndices.length);
+      moveIndex = emptyIndices[randomIndex];
+    }
+  }
+
+  // Execute the move
+  if (moveIndex !== -1) {
     makeMove(moveIndex);
   }
+}
+
+// Helper to find winning/blocking moves
+function findBestMove(player) {
+  for (let pattern of winPatterns) {
+    const [a, b, c] = pattern;
+    // Check if 2 spots are filled by 'player' and the 3rd is empty
+    if (board[a] === player && board[b] === player && board[c] === "") return c;
+    if (board[a] === player && board[c] === player && board[b] === "") return b;
+    if (board[b] === player && board[c] === player && board[a] === "") return a;
+  }
+  return -1;
 }
 
 function updateCell(index) {
@@ -122,18 +156,26 @@ function highlightWinningCells() {
     return board[a] && board[a] === board[b] && board[a] === board[c];
   });
 
-  winPattern.forEach((index) => {
-    cells[index].classList.add("winner");
-  });
+  if (winPattern) {
+    winPattern.forEach((index) => {
+      cells[index].classList.add("winner");
+    });
+  }
 }
 
 function endGame(message) {
   if (!message.includes("Tie")) {
-    document.getElementById("winSound").play();
+    const winSound = document.getElementById("winSound");
+    if (winSound) winSound.play().catch(() => {});
   }
   gameActive = false;
   gameStatus.textContent = message;
-  gameStatus.style.color = "#fff";
+
+  // Color the status message based on result
+  if (message.includes("X")) gameStatus.style.color = "#ff0055";
+  else if (message.includes("O")) gameStatus.style.color = "#00f3ff";
+  else gameStatus.style.color = "#fff";
+
   currentPlayerDisplay.textContent = "Game Over";
 }
 
@@ -187,6 +229,7 @@ function initializeGame() {
 
   resetBtn.addEventListener("click", goToMainMenu);
   resetScoreBtn.addEventListener("click", resetScore);
+  newGameBtn.addEventListener("click", resetGameBoard);
 }
 
 document.addEventListener("DOMContentLoaded", initializeGame);
